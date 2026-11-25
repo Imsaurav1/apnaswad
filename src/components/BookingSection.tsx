@@ -1,4 +1,5 @@
-import { FormEvent, useEffect, useState } from 'react';
+import { FormEvent, useEffect, useRef, useState } from 'react';
+import { toBlob } from 'html-to-image';
 import {
   PhoneCall,
   Calendar,
@@ -16,6 +17,7 @@ import {
 } from 'lucide-react';
 import { RESTAURANT_CONFIG, getTelHref, getWhatsAppHref } from '../config/restaurant';
 import { BookingMode, BookingRecord, CartItem, SpiceLevel } from '../types';
+import { OrderTicket } from './OrderTicket';
 
 interface BookingSectionProps {
   mode: BookingMode;
@@ -68,6 +70,8 @@ export function BookingSection({
   const [notes, setNotes] = useState('');
   const [error, setError] = useState('');
   const [copiedPhone, setCopiedPhone] = useState(false);
+  const [shareError, setShareError] = useState('');
+  const ticketRef = useRef<HTMLDivElement>(null);
 
   const [confirmedBooking, setConfirmedBooking] = useState<BookingRecord | null>(null);
   const [recentBookings, setRecentBookings] = useState<BookingRecord[]>(() => {
@@ -94,6 +98,41 @@ export function BookingSection({
       setTimeout(() => setCopiedPhone(false), 2000);
     } catch {
       // Ignore clipboard failures in restricted contexts
+    }
+  };
+
+  const handleShareOrder = async () => {
+    if (!confirmedBooking || !ticketRef.current) return;
+    setShareError('');
+
+    try {
+      const blob = await toBlob(ticketRef.current, {
+        pixelRatio: 2,
+        backgroundColor: '#FFF8ED',
+      });
+      if (!blob) throw new Error('Could not create the booking image.');
+
+      const file = new File([blob], `Apna-Swad-${confirmedBooking.id}.png`, {
+        type: 'image/png',
+      });
+
+      if (navigator.canShare?.({ files: [file] })) {
+        await navigator.share({
+          files: [file],
+          title: `Apna Swad Order #${confirmedBooking.id}`,
+          text: 'Here is my order!',
+        });
+      } else {
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = `Apna-Swad-${confirmedBooking.id}.png`;
+        link.click();
+        window.setTimeout(() => URL.revokeObjectURL(url), 1000);
+      }
+    } catch (error) {
+      if (error instanceof DOMException && error.name === 'AbortError') return;
+      setShareError('The ticket image could not be shared. Please try again.');
     }
   };
 
@@ -204,11 +243,13 @@ export function BookingSection({
                     Thank you, {confirmedBooking.customerName}!
                   </h3>
                   <p className="mt-1 text-sm text-emerald-800">
-                    Tap <strong>Send on WhatsApp</strong> or <strong>Call Rohit Directly</strong>{' '}
+                    Tap <strong>Share Order Image</strong> or <strong>Call Rohit Directly</strong>{' '}
                     below so the kitchen starts preparing on time.
                   </p>
                 </div>
               </div>
+
+              <OrderTicket confirmedBooking={confirmedBooking} ticketRef={ticketRef} />
 
               <div className="rounded-2xl border border-stone-200 bg-stone-50 p-5 space-y-3 text-sm">
                 <div className="flex justify-between">
@@ -258,15 +299,14 @@ export function BookingSection({
               </div>
 
               <div className="flex flex-col sm:flex-row gap-3">
-                <a
-                  href={getWhatsAppHref(buildBookingMessage(confirmedBooking))}
-                  target="_blank"
-                  rel="noreferrer"
+                <button
+                  type="button"
+                  onClick={handleShareOrder}
                   className="flex-1 inline-flex items-center justify-center gap-2 rounded-2xl bg-emerald-600 px-5 py-3.5 text-sm font-bold text-white shadow-md hover:bg-emerald-700 transition-colors"
                 >
                   <MessageCircle className="h-5 w-5" />
-                  <span>Send Booking on WhatsApp</span>
-                </a>
+                  <span>Share Order Image</span>
+                </button>
                 <a
                   href={getTelHref()}
                   className="flex-1 inline-flex items-center justify-center gap-2 rounded-2xl bg-[#D92D20] px-5 py-3.5 text-sm font-bold text-white shadow-md hover:bg-[#B42318] transition-colors"
@@ -275,6 +315,7 @@ export function BookingSection({
                   <span>Call {RESTAURANT_CONFIG.ownerName} Now</span>
                 </a>
               </div>
+              {shareError && <p role="alert" className="text-sm font-semibold text-red-700">{shareError}</p>}
 
               <button
                 type="button"
