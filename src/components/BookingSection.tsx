@@ -568,10 +568,13 @@ export function BookingSection({
             <div className="mt-6 rounded-2xl border border-white/15 bg-black/30 p-4 flex items-center justify-between gap-3">
               <div>
                 <p className="text-[11px] uppercase tracking-wider text-amber-300 font-bold">
-                  Booking &amp; Order Hotline
+                  Booking &amp; Call Hotline
                 </p>
                 <p className="font-display text-xl sm:text-2xl font-extrabold tracking-tight text-white">
                   {RESTAURANT_CONFIG.phoneDisplay}
+                </p>
+                <p className="mt-1 text-xs text-emerald-300 font-semibold">
+                  WhatsApp: {RESTAURANT_CONFIG.whatsappDisplay}
                 </p>
               </div>
               <button

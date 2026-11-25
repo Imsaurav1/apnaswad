@@ -7,7 +7,8 @@ export const RESTAURANT_CONFIG = {
 
   phoneRaw: '8676072182',
   phoneDisplay: '+91 86760 72182',
-  whatsappNumber: '918676072182',
+  whatsappNumber: '919588744159',
+  whatsappDisplay: '+91 95887 44159',
 
   locationShort: 'Opposite High School, Rahika',
   locationHindi: 'रहिका, हाई स्कूल के सामने',
